@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0c0f12">
+<title>APK Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0c0f12;--bg1:#111519;--bg2:#161c22;--bg3:#1c242c;
+  --card:#1a2029;--card2:#202830;
+  --border:#252f38;--border2:#2e3b47;
+  --accent:#00e5a0;--accent2:#00c486;--accent3:#00ffb3;
+  --abg:rgba(0,229,160,.09);--abg2:rgba(0,229,160,.16);
+  --text:#dde6ef;--text2:#7a95a8;--text3:#3f5463;
+  --red:#ff5a72;--redbg:rgba(255,90,114,.1);
+  --yellow:#ffc94d;--ybg:rgba(255,201,77,.1);
+  --blue:#5aacff;--bbg:rgba(90,172,255,.1);
+  --touch:48px;--r:14px;--rsm:10px;--rxs:7px;
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+  --topH:56px;--botH:64px;
+  --font:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{height:100%;background:var(--bg);overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100%;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior:none;line-height:1.5}
+.app{display:flex;flex-direction:column;height:100%;height:100dvh;overflow:hidden;position:fixed;inset:0}
+
+/* TOP BAR */
+.topbar{flex-shrink:0;height:calc(var(--topH) + var(--sat));padding-top:var(--sat);background:rgba(12,15,18,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:flex-end;z-index:100}
+.tbi{height:var(--topH);width:100%;display:flex;align-items:center;padding:0 16px;gap:12px}
+.logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#0c0f12;font-weight:800;box-shadow:0 0 20px rgba(0,229,160,.3);flex-shrink:0}
+.logo-text{flex:1;min-width:0}
+.logo-name{font-size:16px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
+.logo-sub{font-size:10px;color:var(--text2);letter-spacing:.3px;margin-top:1px}
+.topbar-btns{display:flex;gap:6px}
+.tbtn{width:36px;height:36px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:15px;cursor:pointer;transition:all .15s}
+.tbtn:active{transform:scale(.92);background:var(--border)}
+.tbtn.ac{background:var(--abg);border-color:rgba(0,229,160,.25);color:var(--accent)}
+
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+.scroll::-webkit-scrollbar{display:none}
+.panel{display:none;padding:14px;padding-bottom:calc(14px + var(--botH) + var(--sab) + 10px);animation:fadeUp .25s ease both}
+.panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* BOTTOM NAV */
+.botnav{flex-shrink:0;height:calc(var(--botH) + var(--sab));padding-bottom:var(--sab);background:rgba(12,15,18,.97);backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;align-items:flex-start;z-index:100}
+.nav-items{display:flex;width:100%;height:var(--botH)}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;cursor:pointer;color:var(--text3);transition:color .2s;position:relative;min-height:var(--touch);padding:8px 4px}
+.ni i{font-size:20px;transition:transform .2s}
+.ni span{font-size:10px;font-weight:600;letter-spacing:.3px;line-height:1}
+.ni.active{color:var(--accent)}
+.ni.active i{transform:scale(1.1)}
+.ni.active::before{content:'';position:absolute;top:6px;width:32px;height:3px;background:var(--accent);border-radius:0 0 3px 3px}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden;position:relative}
+.cb{padding:16px}
+.card.ca::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent)}
+.ched{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
+.ctitle{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;letter-spacing:-.2px}
+.cicon{width:30px;height:30px;background:var(--abg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--accent);flex-shrink:0}
+.slbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px}
+.slbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* FORM */
+.fg{margin-bottom:14px}
+.fg:last-child{margin-bottom:0}
+.lbl{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);margin-bottom:7px}
+.lbl .req{color:var(--red);font-size:13px;line-height:1}
+.lbl .opt{margin-left:auto;font-size:10px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text3)}
+.fld{position:relative;display:flex;align-items:center}
+.fi{position:absolute;left:13px;color:var(--text3);font-size:14px;pointer-events:none;z-index:1}
+.fa2{position:absolute;right:6px;width:34px;height:34px;background:none;border:none;color:var(--text2);cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s}
+input,select,textarea{width:100%;height:var(--touch);padding:0 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rsm);font-family:var(--font);font-size:15px;color:var(--text);outline:none;transition:border-color .15s,background .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--bg3);box-shadow:0 0 0 3px var(--abg)}
+input.hi{padding-left:40px}
+input.ha{padding-right:44px}
+select{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#7a95a8' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px;cursor:pointer}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;flex-shrink:0}
+.bg{background:var(--abg);color:var(--accent);border:1px solid rgba(0,229,160,.2)}
+.br{background:var(--redbg);color:var(--red);border:1px solid rgba(255,90,114,.2)}
+.by{background:var(--ybg);color:var(--yellow);border:1px solid rgba(255,201,77,.2)}
+.bb{background:var(--bbg);color:var(--blue);border:1px solid rgba(90,172,255,.2)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--touch);padding:0 20px;border:none;border-radius:var(--rsm);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;position:relative;overflow:hidden}
+.btn:active{transform:scale(.96)}
+.btn i{font-size:15px;flex-shrink:0}
+.btn-p{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0c0f12;box-shadow:0 4px 20px rgba(0,229,160,.3)}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-g{background:var(--bg3);border:1px solid var(--border);color:var(--text2)}
+.btn-d{background:var(--red);color:#fff}
+.btn-sm{height:38px;padding:0 14px;font-size:13px}
+.btn-fw{width:100%}
+.spn{width:16px;height:16px;border:2px solid rgba(12,15,18,.25);border-top-color:#0c0f12;border-radius:50%;animation:spin .6s linear infinite;display:none}
+.btn.loading .spn{display:block}
+.btn.loading .bt{opacity:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* UPLOAD ZONE */
+.dz{border:2px dashed var(--border);border-radius:var(--r);padding:28px 16px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg2);position:relative;overflow:hidden}
+.dz:active,.dz.over{border-color:var(--accent);border-style:solid;background:var(--abg)}
+.dz.filled{border-color:var(--accent);border-style:solid;background:var(--abg)}
+.dz-ico{font-size:32px;color:var(--accent);margin-bottom:8px;display:block}
+.dz-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+.fc{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:var(--rxs);padding:10px 12px;margin-top:12px;text-align:left}
+.fc-ico{width:34px;height:34px;border-radius:8px;background:var(--abg);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:15px;flex-shrink:0}
+.fc-info{flex:1;min-width:0}
+.fc-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-size{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+.fc-del{width:32px;height:32px;flex-shrink:0;background:var(--redbg);border:none;border-radius:8px;color:var(--red);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer}
+input[type="file"]{display:none}
+
+/* SEGMENTED CONTROL */
+.seg-wrap{margin-bottom:14px}
+.seg{display:flex;background:var(--bg2);border-radius:var(--rsm);padding:4px;gap:4px}
+.seg-btn{flex:1;padding:8px 12px;border:none;background:transparent;border-radius:8px;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center}
+.seg-btn.active{background:var(--accent);color:#0c0f12;box-shadow:0 2px 10px rgba(0,229,160,.2)}
+
+/* PROGRESS & READINESS */
+.pbar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:3px;transition:width .4s ease;position:relative}
+.pfill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:20px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:psh 1.5s linear infinite}
+@keyframes psh{0%{transform:translateX(-30px)}100%{transform:translateX(40px)}}
+.ri{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ri:last-child{border-bottom:none}
+.ri-dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .25s;background:var(--bg3);color:var(--text3);border:1.5px solid var(--border)}
+.ri-dot.ok{background:var(--abg);color:var(--accent);border-color:var(--accent)}
+.ri-lbl{flex:1;font-size:13px;color:var(--text2)}
+.ri-lbl.ok{color:var(--text)}
+
+/* BUILD STEPS - ENHANCED */
+.steps{display:flex;flex-direction:column}
+.step{display:flex;gap:12px;padding:14px 0;position:relative;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none}
+.step:not(:last-child)::after{content:'';position:absolute;left:15px;top:42px;bottom:-1px;width:2px;background:var(--border);transition:background .3s;z-index:0}
+.step.done:not(:last-child)::after{background:var(--accent)}
+.snum{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;background:var(--bg2);color:var(--text3);border:2px solid var(--border);z-index:1;transition:all .3s}
+.step.active .snum{background:var(--abg2);color:var(--accent);border-color:var(--accent);animation:sp 2s ease infinite;box-shadow:0 0 0 4px var(--abg)}
+@keyframes sp{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.3)}50%{box-shadow:0 0 0 8px rgba(0,229,160,0)}}
+.step.done .snum{background:var(--accent);color:#0c0f12;border-color:var(--accent);animation:none}
+.step.error .snum{background:var(--redbg);color:var(--red);border-color:var(--red);animation:none}
+.sbody{flex:1;padding-top:2px}
+.stitle{font-size:13px;font-weight:700;color:var(--text);transition:color .2s; margin-bottom:2px}
+.step.active .stitle{color:var(--accent)}
+.step.error .stitle{color:var(--red)}
+.ssub{font-size:11px;color:var(--text3);transition:color .2s; min-height:16px}
+.step.active .ssub{color:var(--text2)}
+
+/* LOGS ENHANCED */
+.lwrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.lhd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.lhd-l{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-family:var(--mono)}
+.lbody{padding:12px 14px;max-height:300px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.7;-webkit-overflow-scrolling:touch}
+.lbody::-webkit-scrollbar{display:none}
+.log{display:flex;gap:10px;align-items:flex-start;margin-bottom:2px}
+.lts{color:var(--text3);flex-shrink:0;font-size:10px;padding-top:1px;min-width:32px}
+.lmsg{color:var(--text2);word-break:break-all;flex:1}
+.log.ok .lmsg{color:var(--accent)}
+.log.err .lmsg{color:var(--red);font-weight:600}
+.log.info .lmsg{color:var(--blue)}
+.log.warn .lmsg{color:var(--yellow)}
+.log.file .lmsg{color:var(--text)}
+.log .lbr{display:block;height:1px;background:var(--border);margin:6px 0}
+
+/* ACTIVITY BOX */
+.act-box{background:linear-gradient(135deg, var(--card), var(--bg2));border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.act-spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.act-text{flex:1;font-size:12px;color:var(--text);font-weight:500}
+.act-text span{display:block;font-size:10px;color:var(--text3);margin-top:2px}
+
+/* DOWNLOAD CARD */
+.dlcard{display:none;text-align:center;background:linear-gradient(135deg,rgba(0,229,160,.07),rgba(0,229,160,.03));border:1px solid rgba(0,229,160,.25);border-radius:var(--r);padding:28px 20px;margin-bottom:12px}
+.dlcard.show{display:block;animation:fadeUp .35s ease}
+.dlico{font-size:52px;color:var(--accent);margin-bottom:10px;display:block;filter:drop-shadow(0 0 20px rgba(0,229,160,.4))}
+.dltitle{font-size:18px;font-weight:800;margin-bottom:4px;letter-spacing:-.3px}
+.dlsub{font-size:13px;color:var(--text2);margin-bottom:20px}
+
+/* PERMS */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.perm{display:flex;align-items:center;gap:8px;padding:10px 11px;border-radius:var(--rxs);background:var(--bg2);border:1.5px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;min-height:44px}
+.perm:active{transform:scale(.97)}
+.perm.on{background:var(--abg);border-color:rgba(0,229,160,.25);color:var(--accent)}
+.perm i{font-size:15px;flex-shrink:0;width:18px;text-align:center}
+.pname{flex:1;font-size:10px;line-height:1.3}
+.pck{width:16px;height:16px;border-radius:4px;flex-shrink:0;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .15s}
+.perm.on .pck{background:var(--accent);border-color:var(--accent);color:#0c0f12}
+
+/* TOGGLE */
+.tog{width:50px;height:28px;border-radius:14px;background:var(--border);border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background .2s}
+.tog.on{background:var(--accent)}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.tog.on::after{transform:translateX(22px)}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);gap:14px;min-height:var(--touch)}
+.srow:last-child{border-bottom:none}
+.sr-lbl{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+
+/* BUILD HERO */
+.bhero{text-align:center;padding:36px 20px 28px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;position:relative;overflow:hidden}
+.bhero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,229,160,.07),transparent 60%)}
+.horb{width:68px;height:68px;margin:0 auto 16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(0,229,160,.25),transparent),var(--abg);border:1px solid rgba(0,229,160,.2);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--accent);box-shadow:0 0 40px rgba(0,229,160,.12);position:relative;z-index:1}
+.htitle{font-size:20px;font-weight:800;letter-spacing:-.4px;margin-bottom:6px;position:relative;z-index:1}
+.hdesc{font-size:13px;color:var(--text2);margin-bottom:22px;position:relative;z-index:1;line-height:1.6}
+
+/* UTILS */
+.hidden{display:none!important}
+.mt12{margin-top:12px}.mb14{margin-bottom:14px}
+.tac{color:var(--accent)}
+
+/* BUILD STATUS */
+.build-status-box{border-radius:var(--rsm);padding:14px 16px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);margin-bottom:12px}
+.bsb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bsb-row:last-child{margin-bottom:0}
+.bsb-lbl{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.bsb-val{font-size:12px;font-weight:700;color:var(--text)}
+.bsb-val a{color:var(--accent);text-decoration:none}
+
+/* ICON ZONE */
+.iz{display:flex;align-items:center;gap:14px;border:2px dashed var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.iz:active,.iz.over,.iz.filled{border-color:var(--accent);border-style:solid;background:var(--abg)}
+.ithumb{width:56px;height:56px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:22px;color:var(--text3)}
+.ithumb img{width:100%;height:100%;object-fit:cover;display:none}
+.iz-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.iz-sub{font-size:11px;color:var(--text2)}
+
+/* TIMER */
+/* TIMER */
+.btime{font-family:var(--mono);font-size:12px;color:#ffffff;display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:12px;background:var(--bg2);padding:6px;border-radius:var(--rxs)}
+.btime i { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tbi">
+    <div class="logo-mark"><i class="fa-solid fa-hammer"></i></div>
+    <div class="logo-text"><div class="logo-name">APK Builder</div><div class="logo-sub">Create By Thxyzz404 🇮🇩</div></div>
+    <div class="topbar-btns">
+      <button class="tbtn" id="themeBtn"><i class="fa-solid fa-moon"></i></button>
+      <button class="tbtn ac" id="saveBtn"><i class="fa-solid fa-floppy-disk"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- SCROLL AREA -->
+<div class="scroll" id="scroll">
+  <!-- EDITOR PANEL -->
+  <div class="panel active" id="panel-editor">
+    <div class="card ca">
+      <div class="cb">
+        <div class="ched"><div class="ctitle"><div class="cicon"><i class="fa-solid fa-mobile-screen-button"></i></div>Konfigurasi</div><span class="badge by" id="cfgBadge">Belum Lengkap</span></div>
+        <div class="fg"><div class="lbl">Nama APK<span class="req">*</span></div><div class="fld"><i class="fi fa-solid fa-tag"></i><input type="text" class="hi" id="apkName" placeholder="Aplikasi Kerenku" maxlength="50" oninput="chkCfg()"></div></div>
+        <div class="r2 mb14">
+          <div class="fg" style="margin-bottom:0"><div class="lbl">Min SDK</div><select id="minSdk"><option value="22">API 22</option><option value="23" selected>API 23</option></select></div>
+          <div class="fg" style="margin-bottom:0"><div class="lbl">Target SDK</div><select id="tgtSdk"><option value="34" selected>API 34</option></select></div>
+        </div>
+        <div class="fg"><div class="lbl">Nama Paket<span class="req">*</span></div><div class="fld"><i class="fi fa-solid fa-fingerprint"></i><input type="text" class="mono hi" id="pkgName" placeholder="com.example.myapp" oninput="chkCfg()"></div></div>
+        <div class="r2 mb14">
+          <div class="fg" style="margin-bottom:0"><div class="lbl">Versi</div><input type="text" class="hi" id="verName" value="1.0.0"></div>
+          <div class="fg" style="margin-bottom:0"><div class="lbl">Kode Versi</div><input type="number" class="hi" id="verCode" value="1" min="1"></div>
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <div class="lbl">Ikon<span class="opt">opsional</span></div>
+          <div class="iz" id="iconZone">
+            <div class="ithumb" id="iconThumb"><i class="fa-solid fa-image"></i><img id="iconImg" alt=""></div>
+            <div><div class="iz-title">Upload Ikon</div><div class="iz-sub">PNG/JPG (Saran 192x192px)</div></div>
+          </div>
+          <input type="file" id="iconInput" accept="image/*">
+        </div>
+      </div>
+    </div>
+
+    <div class="card ca">
+      <div class="cb">
+        <div class="ched"><div class="ctitle"><div class="cicon"><i class="fa-brands fa-github"></i></div>GitHub</div><span class="badge by" id="ghBadge">Belum Terhubung</span></div>
+        <div class="r2 mb14">
+          <div class="fg" style="margin-bottom:0"><div class="lbl">Username<span class="req">*</span></div><input type="text" class="hi" id="ghUser" placeholder="octocat" oninput="chkGH()"></div>
+          <div class="fg" style="margin-bottom:0"><div class="lbl">Repo<span class="req">*</span></div><input type="text" class="mono hi" id="repoName" placeholder="my-apk" oninput="chkGH()"></div>
+        </div>
+        <div class="fg mb14"><div class="lbl">Token<span class="req">*</span></div><div class="fld"><i class="fi fa-solid fa-key"></i><input type="password" class="mono hi ha" id="ghToken" placeholder="ghp_xxxx" oninput="chkGH()"><button class="fa2" id="tokenEye"><i class="fa-solid fa-eye"></i></button></div></div>
+        
+        <div class="srow" style="border:none;padding:8px 0 14px 0">
+          <div><div class="sr-lbl" style="font-size:12px">Repo Pribadi (Private)</div></div>
+          <button class="tog" id="privTog" onclick="togglePrivacy()"></button>
+        </div>
+
+        <button class="btn btn-g btn-sm" onclick="testGH()"><i class="fa-solid fa-plug"></i> Uji Koneksi</button>
+      </div>
+    </div>
+
+    <div class="card ca">
+      <div class="cb">
+        <div class="ched"><div class="ctitle"><div class="cicon"><i class="fa-solid fa-file-code"></i></div>Sumber Aplikasi</div><span class="badge bb" id="srcBadge">Belum Ada</span></div>
+        <div class="seg-wrap"><div class="seg">
+            <button class="seg-btn active" data-mode="file" onclick="switchSrcMode('file')">HTML</button>
+            <button class="seg-btn" data-mode="url" onclick="switchSrcMode('url')">URL</button>
+            <button class="seg-btn" data-mode="zip" onclick="switchSrcMode('zip')">Zip</button>
+        </div></div>
+        <div id="modeFile"><div class="dz" id="htmlZone"><span class="dz-ico"><i class="fa-solid fa-cloud-arrow-up"></i></span><div class="dz-title">Upload HTML</div><div class="fc hidden" id="htmlChip"><div class="fc-ico"><i class="fa-solid fa-file-code"></i></div><div class="fc-info"><div class="fc-name" id="htmlFN"></div><div class="fc-size" id="htmlFS"></div></div><button class="fc-del" id="htmlDel"><i class="fa-solid fa-trash"></i></button></div></div><input type="file" id="htmlInput" accept=".html,.htm"></div>
+        <div id="modeUrl" class="hidden"><div class="fg"><div class="lbl">URL</div><input type="url" class="hi" id="urlInput" placeholder="https://example.com"></div><button class="btn btn-g btn-sm btn-fw" onclick="fetchUrl()"><i class="fa-solid fa-download"></i> Ambil</button><div class="fc hidden mt12" id="urlChip"><div class="fc-ico"><i class="fa-solid fa-globe"></i></div><div class="fc-info"><div class="fc-name" id="urlFN">URL</div></div><button class="fc-del" id="urlDel"><i class="fa-solid fa-trash"></i></button></div></div>
+        <div id="modeZip" class="hidden"><div class="dz" id="zipZone"><span class="dz-ico"><i class="fa-solid fa-file-zipper"></i></span><div class="dz-title">Upload ZIP</div><div class="fc hidden" id="zipChip"><div class="fc-ico"><i class="fa-solid fa-file-archive"></i></div><div class="fc-info"><div class="fc-name" id="zipFN">Zip</div><div class="fc-size" id="zipFS">0 file</div></div><button class="fc-del" id="zipDel"><i class="fa-solid fa-trash"></i></button></div></div><input type="file" id="zipInput" accept=".zip"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cb">
+        <div class="slbl"><i class="fa-solid fa-clipboard-check"></i>Kesiapan Build</div>
+        <div class="ri"><div class="ri-dot" id="r0"></div><div class="ri-lbl" id="rl0">Nama aplikasi</div></div>
+        <div class="ri"><div class="ri-dot" id="r1"></div><div class="ri-lbl" id="rl1">Nama paket valid</div></div>
+        <div class="ri"><div class="ri-dot" id="r2"></div><div class="ri-lbl" id="rl2">GitHub Terhubung</div></div>
+        <div class="ri"><div class="ri-dot" id="r3"></div><div class="ri-lbl" id="rl3">Sumber siap</div></div>
+        <div class="pbar mt12"><div class="pfill" id="readP" style="width:0%"></div></div>
+        <button class="btn btn-p btn-fw mt12" onclick="switchTab('build')"><i class="fa-solid fa-rocket"></i> Lanjut Build</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUILD PANEL -->
+  <div class="panel" id="panel-build">
+    <div class="bhero"><div class="horb"><i class="fa-solid fa-rocket"></i></div><div class="htitle">Build APK Sungguhan</div><div class="hdesc">Proses build akan berjalan di server GitHub Actions.</div><button class="btn btn-p" id="buildBtn" onclick="startRealBuild()"><i class="fa-solid fa-play"></i> Mulai Build</button></div>
+    
+    <div class="card hidden" id="stepsCard">
+      <div class="cb">
+        <!-- Timer & Activity -->
+        <div class="btime" id="buildTimer"><i class="fa-solid fa-stopwatch"></i> <span id="timerVal">00:00</span></div>
+        <div class="act-box hidden" id="actBox">
+          <div class="act-spinner"></div>
+          <div class="act-text" id="actText">Memulai...</div>
+        </div>
+
+        <div class="pbar mb14"><div class="pfill" id="buildP" style="width:0%"></div></div>
+        
+        <div class="steps">
+          <div class="step" data-s="0"><div class="snum">1</div><div class="sbody"><div class="stitle">Repository</div><div class="ssub" id="s-sub-0">Menyiapkan...</div></div></div>
+          <div class="step" data-s="1"><div class="snum">2</div><div class="sbody"><div class="stitle">Upload</div><div class="ssub" id="s-sub-1">Menyiapkan...</div></div></div>
+          <div class="step" data-s="2"><div class="snum">3</div><div class="sbody"><div class="stitle">Actions</div><div class="ssub" id="s-sub-2">Menyiapkan...</div></div></div>
+          <div class="step" data-s="3"><div class="snum">4</div><div class="sbody"><div class="stitle">Selesai</div><div class="ssub" id="s-sub-3">Menunggu...</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="build-status-box hidden" id="statusBox"><div class="bsb-row"><span class="bsb-lbl">Repo</span><span class="bsb-val"><a id="repoLink" href="#" target="_blank">-</a></span></div><div class="bsb-row"><span class="bsb-lbl">Actions</span><span class="bsb-val"><a id="actionsLink" href="#" target="_blank">Buka →</a></span></div><div class="bsb-row"><span class="bsb-lbl">Status</span><span class="bsb-val" id="runStatus">-</span></div></div>
+    <div class="lwrap hidden" id="logsCard"><div class="lhd"><div class="lhd-l"><i class="fa-solid fa-terminal"></i>Log Detail</div></div><div class="lbody" id="logsBody"></div></div>
+    <div class="dlcard" id="dlCard"><span class="dlico"><i class="fa-solid fa-circle-check"></i></span><div class="dltitle">Build Berhasil!</div><div class="dlsub">APK tersedia di GitHub Actions Artifacts</div><a class="btn btn-p btn-fw" id="dlBtn" href="#" target="_blank"><i class="fa-solid fa-download"></i> Download</a></div>
+  </div>
+
+  <!-- ADVANCED PANEL -->
+  <div class="panel" id="panel-advanced">
+     <div class="card ca"><div class="cb">
+        <div class="ched"><div class="ctitle"><div class="cicon"><i class="fa-solid fa-shield-halved"></i></div>Izin Android</div><span class="badge bb" id="permCnt">1 aktif</span></div>
+        <div class="pgrid" id="permsGrid">
+          <div class="perm on" onclick="tPerm(this)"><i class="fa-solid fa-wifi"></i><span class="pname">INTERNET</span><span class="pck on"><i class="fa-solid fa-check"></i></span></div>
+          <div class="perm" onclick="tPerm(this)"><i class="fa-solid fa-camera"></i><span class="pname">CAMERA</span><span class="pck"><i class="fa-solid fa-check"></i></span></div>
+          <div class="perm" onclick="tPerm(this)"><i class="fa-solid fa-microphone"></i><span class="pname">RECORD_AUDIO</span><span class="pck"><i class="fa-solid fa-check"></i></span></div>
+          <div class="perm" onclick="tPerm(this)"><i class="fa-solid fa-location-dot"></i><span class="pname">LOCATION</span><span class="pck"><i class="fa-solid fa-check"></i></span></div>
+          <div class="perm" onclick="tPerm(this)"><i class="fa-solid fa-database"></i><span class="pname">READ_STORAGE</span><span class="pck"><i class="fa-solid fa-check"></i></span></div>
+          <div class="perm" onclick="tPerm(this)"><i class="fa-solid fa-floppy-disk"></i><span class="pname">WRITE_STORAGE</span><span class="pck"><i class="fa-solid fa-check"></i></span></div>
+          <div class="perm" onclick="tPerm(this)"><i class="fa-solid fa-bell"></i><span class="pname">VIBRATE</span><span class="pck"><i class="fa-solid fa-check"></i></span></div>
+          <div class="perm" onclick="tPerm(this)"><i class="fa-solid fa-network-wired"></i><span class="pname">NETWORK_STATE</span><span class="pck"><i class="fa-solid fa-check"></i></span></div>
+        </div>
+    </div></div>
+  </div>
+
+  <!-- SETTINGS PANEL -->
+  <div class="panel" id="panel-settings">
+    <div class="card ca"><div class="cb"><div class="srow"><div><div class="sr-lbl">Mode Gelap</div></div><button class="tog on" id="darkTog" onclick="toggleTheme()"></button></div></div></div>
+    <div class="card" style="border-color:var(--red)"><div class="cb"><button class="btn btn-d btn-sm btn-fw" onclick="resetAll()"><i class="fa-solid fa-rotate-left"></i> Reset Semua</button></div></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="botnav">
+  <div class="nav-items">
+    <button class="ni active" data-tab="editor"><i class="fa-solid fa-code"></i><span>Editor</span></button>
+    <button class="ni" data-tab="build"><i class="fa-solid fa-rocket"></i><span>Build</span></button>
+    <button class="ni" data-tab="advanced"><i class="fa-solid fa-sliders"></i><span>Lanjutan</span></button>
+    <button class="ni" data-tab="settings"><i class="fa-solid fa-gear"></i><span>Setelan</span></button>
+  </div>
+</div>
+</div>
+<div class="twrap" id="tw"></div>
+
+<script>
+"use strict";
+var appState = { sourceFiles: {}, sourceType: null, iconFile: null, iconDataUrl: null, building: false, isPrivate: false };
+
+// Timer Variables
+var buildTimerInterval = null;
+var buildStartTime = 0;
+
+function fmt(b) { if (!b) return '0 B'; var k = 1024, s = ['B','KB','MB'], i = Math.floor(Math.log(b)/Math.log(k)); return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i]; }
+function escHtml(t) { var d = document.createElement('div'); d.appendChild(document.createTextNode(t)); return d.innerHTML; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function isBinary(name) { const ext = name.split('.').pop().toLowerCase(); return ['png','jpg','jpeg','gif','webp','woff','woff2','ttf','otf','mp3','mp4','pdf','zip'].includes(ext); }
+
+function switchTab(id) { document.querySelectorAll('.ni').forEach(b => b.classList.toggle('active', b.dataset.tab === id)); document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + id)); document.getElementById('scroll').scrollTop = 0; }
+document.querySelectorAll('.ni').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+function switchSrcMode(mode) { document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode)); document.getElementById('modeFile').classList.toggle('hidden', mode !== 'file'); document.getElementById('modeUrl').classList.toggle('hidden', mode !== 'url'); document.getElementById('modeZip').classList.toggle('hidden', mode !== 'zip'); }
+
+let dark = true;
+function applyTheme() { const d = document.documentElement; if (dark) { d.style.setProperty('--bg', '#0c0f12'); d.style.setProperty('--bg2', '#161c22'); d.style.setProperty('--card', '#1a2029'); d.style.setProperty('--border', '#252f38'); d.style.setProperty('--text', '#dde6ef'); } else { d.style.setProperty('--bg', '#f0f4f8'); d.style.setProperty('--bg2', '#dde4ec'); d.style.setProperty('--card', '#ffffff'); d.style.setProperty('--border', '#c8d5e0'); d.style.setProperty('--text', '#1a2733'); } }
+function toggleTheme() { dark = !dark; applyTheme(); }
+document.getElementById('themeBtn').addEventListener('click', toggleTheme); applyTheme();
+
+function toast(msg, type) { type = type || 'tinfo'; const icons = { tok:'fa-solid fa-circle-check', terr:'fa-solid fa-circle-xmark', twarn:'fa-solid fa-triangle-exclamation', tinfo:'fa-solid fa-circle-info' }; const t = document.createElement('div'); t.className = 't ' + type; t.innerHTML = '<i class="' + (icons[type] || icons.tinfo) + '"></i><span>' + escHtml(msg) + '</span>'; document.getElementById('tw').appendChild(t); t.addEventListener('click', () => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }); setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 4000); }
+
+function srcReady() { const cnt = Object.keys(appState.sourceFiles).length; setR(3, cnt > 0 ? 'ok' : null); updR(); const b = document.getElementById('srcBadge'); if (cnt > 0) { b.className = 'badge bg'; b.innerHTML = cnt + ' file'; } else { b.className = 'badge bb'; b.innerHTML = 'Belum Ada'; } }
+function clearSource() { appState.sourceFiles = {}; appState.sourceType = null; srcReady(); }
+
+function chkCfg() { const nm = document.getElementById('apkName').value.trim(); setR(0, nm ? 'ok' : null); const pk = document.getElementById('pkgName').value.trim(); const pkok = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(pk); setR(1, pk ? (pkok ? 'ok' : 'err') : null); updR(); }
+function chkGH() { const u = document.getElementById('ghUser').value.trim(); const t = document.getElementById('ghToken').value.trim(); const r = document.getElementById('repoName').value.trim(); setR(2, !!(u && t && r) ? 'ok' : null); updR(); }
+function setR(i, s) { const d = document.getElementById('r' + i); d.className = 'ri-dot' + (s ? ' ' + s : ''); if (s === 'ok') d.innerHTML = '<i class="fa-solid fa-check" style="font-size:9px"></i>'; else if (s === 'err') d.innerHTML = '<i class="fa-solid fa-xmark" style="font-size:9px"></i>'; else d.innerHTML = ''; }
+function updR() { const cnt = [0,1,2,3].filter(i => document.getElementById('r'+i).classList.contains('ok')).length; document.getElementById('readP').style.width = Math.round(cnt/4*100) + '%'; }
+
+document.getElementById('tokenEye').addEventListener('click', function () { const inp = document.getElementById('ghToken'); inp.type = inp.type === 'password' ? 'text' : 'password'; });
+async function testGH() { const token = document.getElementById('ghToken').value.trim(); const user = document.getElementById('ghUser').value.trim(); if (!user || !token) return; try { const res = await fetch('https://api.github.com/user', { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' } }); const data = await res.json(); if (res.ok) toast('OK: @' + data.login, 'tok'); else toast('Token error', 'terr'); } catch (e) { toast('Error koneksi', 'terr'); } }
+
+function togglePrivacy() { appState.isPrivate = !appState.isPrivate; document.getElementById('privTog').classList.toggle('on', appState.isPrivate); }
+
+/* ICON HANDLER */
+document.getElementById('iconZone').addEventListener('click', () => document.getElementById('iconInput').click());
+document.getElementById('iconInput').addEventListener('change', e => { 
+    const f = e.target.files[0]; 
+    if (!f) return; 
+    appState.iconFile = f; 
+    const r = new FileReader(); 
+    r.onload = ev => { 
+        appState.iconDataUrl = ev.target.result; 
+        document.getElementById('iconImg').src = ev.target.result; 
+        document.getElementById('iconImg').style.display = 'block'; 
+        document.querySelector('.ithumb i').style.display = 'none'; 
+        document.getElementById('iconZone').classList.add('filled'); 
+        toast('Ikon dimuat', 'tok'); 
+    }; 
+    r.readAsDataURL(f); 
+});
+
+/* INPUT HANDLERS */
+const hz = document.getElementById('htmlZone');
+hz.addEventListener('click', e => { if (!e.target.closest('#htmlDel')) document.getElementById('htmlInput').click(); });
+document.getElementById('htmlInput').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+document.getElementById('htmlDel').addEventListener('click', e => { e.stopPropagation(); clearSource(); resetUI('file'); });
+function loadFile(f) { const r = new FileReader(); r.onload = ev => { clearSource(); appState.sourceFiles['index.html'] = ev.target.result; appState.sourceType = 'file'; document.getElementById('htmlFN').textContent = f.name; document.getElementById('htmlFS').textContent = fmt(f.size); document.getElementById('htmlChip').classList.remove('hidden'); hz.classList.add('filled'); srcReady(); toast('File dimuat', 'tok'); }; r.readAsText(f); }
+
+document.getElementById('urlDel').addEventListener('click', () => { clearSource(); resetUI('url'); });
+async function fetchUrl() { 
+    const url = document.getElementById('urlInput').value.trim(); 
+    if (!url) return; 
+    try { 
+        const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); 
+        const text = await res.text(); 
+        if (!text.trim().toLowerCase().startsWith('<!doctype') && !text.trim().toLowerCase().startsWith('<html')) {
+             toast('URL sepertinya bukan HTML valid', 'twarn');
+        }
+        clearSource(); 
+        appState.sourceFiles['index.html'] = text; 
+        appState.sourceType = 'url'; 
+        document.getElementById('urlFN').textContent = url; 
+        document.getElementById('urlChip').classList.remove('hidden'); 
+        srcReady(); 
+        toast('URL diambil', 'tok'); 
+    } catch (e) { toast('Gagal ambil URL', 'terr'); } 
+}
+
+const zz = document.getElementById('zipZone');
+zz.addEventListener('click', e => { if (!e.target.closest('#zipDel')) document.getElementById('zipInput').click(); });
+document.getElementById('zipInput').addEventListener('change', e => { if (e.target.files[0]) loadZip(e.target.files[0]); });
+document.getElementById('zipDel').addEventListener('click', e => { e.stopPropagation(); clearSource(); resetUI('zip'); });
+
+/* FIX: IMPROVED ZIP PATH LOGIC */
+async function loadZip(file) { 
+    try { 
+        if (typeof JSZip === 'undefined') { toast('JSZip error', 'terr'); return; } 
+        const zip = await JSZip.loadAsync(file); 
+        clearSource(); 
+        const promises = []; 
+        let hasIndex = false;
+        
+        // Find root folder if exists
+        let rootFolder = "";
+        const filesList = [];
+        zip.forEach((relativePath, zipEntry) => { filesList.push(relativePath); });
+        
+        // Check if all files are inside a single root folder
+        if (filesList.length > 0) {
+            const firstPart = filesList[0].split('/')[0];
+            if (filesList.every(p => p.startsWith(firstPart + '/') || p === firstPart)) {
+                 // It seems to have a root folder
+                 if (filesList.some(p => p.endsWith('/'))) rootFolder = firstPart + '/';
+            }
+        }
+
+        zip.forEach((relativePath, zipEntry) => { 
+            if (!zipEntry.dir && !relativePath.startsWith('.') && !relativePath.includes('/.')) { 
+                promises.push(zipEntry.async(isBinary(relativePath) ? 'base64' : 'string').then(content => { 
+                    let cleanPath = relativePath;
+                    
+                    // Remove root folder if detected
+                    if (rootFolder && cleanPath.startsWith(rootFolder)) {
+                        cleanPath = cleanPath.replace(rootFolder, '');
+                    }
+
+                    if (cleanPath) { 
+                        appState.sourceFiles[cleanPath] = content;
+                        if (cleanPath.toLowerCase() === 'index.html') hasIndex = true;
+                    } 
+                })); 
+            } 
+        }); 
+        await Promise.all(promises); 
+        
+        if (!hasIndex) {
+            toast('Peringatan: index.html tidak ditemukan', 'twarn');
+        }
+
+        appState.sourceType = 'zip'; 
+        const cnt = Object.keys(appState.sourceFiles).length; 
+        document.getElementById('zipFN').textContent = file.name; 
+        document.getElementById('zipFS').textContent = cnt + ' file'; 
+        document.getElementById('zipChip').classList.remove('hidden'); 
+        zz.classList.add('filled'); 
+        srcReady(); 
+        toast('ZIP diekstrak (' + cnt + ')', 'tok'); 
+    } catch (e) { toast('Error ZIP: ' + e.message, 'terr'); } 
+}
+
+function resetUI(mode) { if (mode === 'file') { document.getElementById('htmlChip').classList.add('hidden'); hz.classList.remove('filled'); } if (mode === 'url') { document.getElementById('urlChip').classList.add('hidden'); } if (mode === 'zip') { document.getElementById('zipChip').classList.add('hidden'); zz.classList.remove('filled'); } }
+function tPerm(el) { el.classList.toggle('on'); el.querySelector('.pck').classList.toggle('on', el.classList.contains('on')); const cnt = document.querySelectorAll('#permsGrid .perm.on').length; document.getElementById('permCnt').textContent = cnt + ' aktif'; }
+function getPerms() { return [...document.querySelectorAll('#permsGrid .perm.on')].map(p => p.querySelector('.pname').textContent.trim()); }
+
+/* GITHUB API */
+var GitHub = (function () {
+  var API = 'https://api.github.com';
+  function _h(token) { return { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' }; }
+  async function createRepo(username, token, repoName, isPrivate) { const res = await fetch(API + '/user/repos', { method: 'POST', headers: _h(token), body: JSON.stringify({ name: repoName, private: isPrivate }) }); if (!res.ok) throw new Error('Gagal buat repo'); return res.json(); }
+  async function uploadFile(username, token, repo, path, content, message, isBinary) { const b64 = isBinary ? content : btoa(unescape(encodeURIComponent(content))); const res = await fetch(API + '/repos/' + username + '/' + repo + '/contents/' + path, { method: 'PUT', headers: _h(token), body: JSON.stringify({ message: message, content: b64, branch: 'main' }) }); if (!res.ok) throw new Error('Gagal upload ' + path); return res.json(); }
+  async function getWorkflowRuns(username, token, repo) { const res = await fetch(API + '/repos/' + username + '/' + repo + '/actions/runs?per_page=1', { headers: _h(token) }); return res.json(); }
+  async function getWorkflowRun(username, token, repo, runId) { const res = await fetch(API + '/repos/' + username + '/' + repo + '/actions/runs/' + runId, { headers: _h(token) }); return res.json(); }
+  async function deleteRepo(username, token, repoName) { await fetch(API + '/repos/' + username + '/' + repoName, { method: 'DELETE', headers: _h(token) }); }
+  return { createRepo, deleteRepo, uploadFile, getWorkflowRuns, getWorkflowRun };
+})();
+
+/* CONFIG GENERATOR */
+function generateConfigXml(hasIcon) {
+  const name = document.getElementById('apkName').value.trim(); 
+  const pkg  = document.getElementById('pkgName').value.trim(); 
+  const ver  = document.getElementById('verName').value.trim() || '1.0.0';
+  const selectedPerms = getPerms(); 
+  let permXml = '';
+  const permMap = { 'INTERNET': 'INTERNET', 'CAMERA': 'CAMERA', 'RECORD_AUDIO': 'RECORD_AUDIO', 'LOCATION': 'ACCESS_FINE_LOCATION', 'READ_STORAGE': 'READ_EXTERNAL_STORAGE', 'WRITE_STORAGE': 'WRITE_EXTERNAL_STORAGE', 'VIBRATE': 'VIBRATE', 'NETWORK_STATE': 'ACCESS_NETWORK_STATE' };
+  selectedPerms.forEach(p => { if (permMap[p]) permXml += '    <uses-permission android:name="android.permission.' + permMap[p] + '" />\n'; });
+  
+  let iconXml = '';
+  // Standard Cordova icon path is res/icon.png in project root
+  if(hasIcon) iconXml = '<icon src="res/icon.png" density="ldpi" /><icon src="res/icon.png" density="mdpi" /><icon src="res/icon.png" density="hdpi" /><icon src="res/icon.png" density="xhdpi" /><icon src="res/icon.png" density="xxhdpi" /><icon src="res/icon.png" density="xxxhdpi" />';
+
+  return '<?xml version="1.0" encoding="UTF-8"?><widget id="' + pkg + '" version="' + ver + '" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android"><name>' + name + '</name><content src="index.html"/><access origin="*"/><allow-navigation href="*://*/*"/><platform name="android">\n' + permXml + iconXml + '  </platform></widget>';
+}
+
+function generatePackageJson() {
+  // Sanitize name
+  let name = document.getElementById('apkName').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '-') || 'my-app';
+  return JSON.stringify({ name: name, version: "1.0.0", displayName: document.getElementById('apkName').value.trim(), cordova: { platforms: ["android"] } }, null, 2);
+}
+
+function generateWorkflowYaml() {
+  const appName = (document.getElementById('apkName').value.trim() || 'MyApp').replace(/[^a-zA-Z0-9-.]/g, '-');
+  // Robust workflow
+  return [
+    'name: Build APK',
+    'on:',
+    '  push:',
+    '    branches: [main]',
+    'jobs:',
+    '  build:',
+    '    runs-on: ubuntu-latest',
+    '    steps:',
+    '      - uses: actions/checkout@v4',
+    '      - uses: actions/setup-java@v4',
+    '        with:',
+    '          java-version: "17"',
+    '          distribution: "temurin"',
+    '      - uses: actions/setup-node@v4',
+    '        with:',
+    '          node-version: "20"',
+    '      - uses: android-actions/setup-android@v3',
+    '      - name: Accept Licenses',
+    '        run: yes | sdkmanager --licenses > /dev/null',
+    '      - name: Install SDK',
+    '        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"',
+    '      - name: Install Cordova',
+    '        run: npm install -g cordova',
+    '      - name: Prepare Package',
+    '        run: |',
+    '          if [ ! -f package.json ]; then echo "{}" > package.json; fi',
+    '      - name: Add Platform',
+    '        run: cordova platform add android@13.0.0 --no-telemetry',
+    '      - name: Build Debug APK',
+    '        run: cordova build android --debug --no-telemetry',
+    '      - uses: actions/upload-artifact@v4',
+    '        with:',
+    '          name: ' + appName + '-debug',
+    '          path: platforms/android/app/build/outputs/apk/debug/*.apk'
+  ].join('\n');
+}
+
+/* LOGGING & UI UPDATE FUNCTIONS */
+function addLog(msg, type) { 
+    const b = document.getElementById('logsBody'); 
+    const d = document.createElement('div'); 
+    d.className = 'log' + (type ? ' ' + type : ''); 
+    const n = new Date(); 
+    d.innerHTML = '<span class="lts">' + n.toLocaleTimeString('id-ID') + '</span><span class="lmsg">' + escHtml(msg) + '</span>'; 
+    b.appendChild(d); 
+    b.scrollTop = b.scrollHeight; 
+}
+
+function setActivity(msg) { document.getElementById('actText').textContent = msg; }
+
+function updateStep(index, title, subtitle, status) {
+    const el = document.querySelector('.step[data-s="' + index + '"]');
+    if (!el) return;
+    el.className = 'step ' + status;
+    const snum = el.querySelector('.snum');
+    if (status === 'done') snum.innerHTML = '<i class="fa-solid fa-check" style="font-size:10px"></i>';
+    else if (status === 'error') snum.innerHTML = '<i class="fa-solid fa-xmark" style="font-size:10px"></i>';
+    else snum.textContent = index + 1;
+    const subEl = document.getElementById('s-sub-' + index);
+    if (subtitle && subEl) subEl.textContent = subtitle;
+}
+
+function startTimer() {
+    buildStartTime = Date.now();
+    buildTimerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - buildStartTime) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('timerVal').textContent = mins + ':' + secs;
+    }, 1000);
+}
+
+function stopTimer() { if (buildTimerInterval) clearInterval(buildTimerInterval); }
+
+/* MAIN BUILD FUNCTION */
+async function startRealBuild() {
+  if (appState.building) return;
+  const apkName = document.getElementById('apkName').value.trim(); 
+  const pkg = document.getElementById('pkgName').value.trim(); 
+  const ghUser = document.getElementById('ghUser').value.trim(); 
+  const ghToken = document.getElementById('ghToken').value.trim(); 
+  const ghRepo = document.getElementById('repoName').value.trim();
+
+  if (!apkName || !pkg || !ghUser || !ghToken || !ghRepo) { toast('Lengkapi semua kolom', 'twarn'); return; }
+  
+  // CRITICAL CHECK: Ensure index.html exists
+  if (!appState.sourceFiles['index.html']) {
+      toast('ERROR: index.html tidak ditemukan di sumber!', 'terr');
+      addLog('GAGAL: index.html tidak ada. Build dibatalkan.', 'err');
+      return;
+  }
+
+  appState.building = true; 
+  document.getElementById('buildBtn').classList.add('loading'); document.getElementById('buildBtn').disabled = true;
+  document.getElementById('stepsCard').classList.remove('hidden'); 
+  document.getElementById('logsCard').classList.remove('hidden'); 
+  document.getElementById('statusBox').classList.remove('hidden'); 
+  document.getElementById('actBox').classList.remove('hidden');
+  document.getElementById('logsBody').innerHTML = ''; 
+  document.getElementById('buildP').style.width = '0%';
+  
+  document.querySelectorAll('.step').forEach((s, i) => { 
+      s.className = 'step'; 
+      s.querySelector('.snum').textContent = i + 1; 
+      const sub = document.getElementById('s-sub-' + i); if(sub) sub.textContent = 'Menunggu...';
+  });
+
+  startTimer();
+
+  const repoUrl = 'https://github.com/' + ghUser + '/' + ghRepo;
+  document.getElementById('repoLink').href = repoUrl; document.getElementById('repoLink').textContent = ghUser + '/' + ghRepo;
+  document.getElementById('actionsLink').href = repoUrl + '/actions';
+
+  try {
+    let files = {...appState.sourceFiles};
+    if (files['index.html'] && !/cordova\.js/i.test(files['index.html'])) files['index.html'] = files['index.html'].replace('<\/body>', '<script src="cordova.js"><\/script>\n<\/body>');
+
+    // STEP 1
+    updateStep(0, 'Repository', 'Memeriksa repo lama...', 'active');
+    setActivity('Mempersiapkan repository...');
+    addLog('Memeriksa repository...', 'info');
+    try { await GitHub.deleteRepo(ghUser, ghToken, ghRepo); await sleep(2000); addLog('Repo lama dihapus', 'warn'); } catch (e) {}
+    
+    updateStep(0, 'Repository', 'Membuat repo baru...', 'active');
+    await GitHub.createRepo(ghUser, ghToken, ghRepo, appState.isPrivate);
+    addLog('Repository dibuat: ' + repoUrl, 'ok');
+    updateStep(0, 'Repository', 'Selesai', 'done');
+    document.getElementById('buildP').style.width = '20%';
+
+    // STEP 2
+    updateStep(1, 'Upload', 'Mempersiapkan config...', 'active');
+    setActivity('Mengupload file proyek...');
+    
+    const hasIcon = !!appState.iconDataUrl;
+    
+    addLog('Upload config.xml', 'file');
+    await GitHub.uploadFile(ghUser, ghToken, ghRepo, 'config.xml', generateConfigXml(hasIcon), 'Config', false);
+    
+    addLog('Upload package.json', 'file');
+    await GitHub.uploadFile(ghUser, ghToken, ghRepo, 'package.json', generatePackageJson(), 'Package', false);
+    
+    addLog('Upload workflow.yml', 'file');
+    await GitHub.uploadFile(ghUser, ghToken, ghRepo, '.github/workflows/build.yml', generateWorkflowYaml(), 'Workflow', false);
+    
+    if (hasIcon) {
+        updateStep(1, 'Upload', 'Mengupload ikon...', 'active');
+        setActivity('Memproses ikon aplikasi...');
+        addLog('Upload ikon ke res/icon.png...', 'file');
+        const iconBase64 = appState.iconDataUrl.split(',')[1];
+        // FIX: Upload to res/icon.png
+        await GitHub.uploadFile(ghUser, ghToken, ghRepo, 'res/icon.png', iconBase64, 'Add App Icon', true);
+        addLog('Ikon terupload', 'ok');
+    }
+
+    const fileKeys = Object.keys(files);
+    let uploadedCount = 0;
+    for (let i = 0; i < fileKeys.length; i++) {
+      const path = fileKeys[i];
+      updateStep(1, 'Upload', 'Upload: ' + path.substring(0,20) + '...', 'active');
+      setActivity('Mengupload: ' + path);
+      
+      const isBin = isBinary(path); 
+      let content = files[path];
+      if (isBin && content.startsWith('data:')) content = content.split(',')[1];
+      
+      // FIX: Ensure www folder exists
+      await GitHub.uploadFile(ghUser, ghToken, ghRepo, 'www/' + path, content, path, isBin);
+      addLog('Upload: www/' + path, 'file');
+      uploadedCount++;
+      let pct = 20 + Math.round((uploadedCount / fileKeys.length) * 40);
+      document.getElementById('buildP').style.width = pct + '%';
+    }
+    
+    addLog('Semua file terupload (' + fileKeys.length + ' file)', 'ok');
+    updateStep(1, 'Upload', fileKeys.length + ' file', 'done');
+    document.getElementById('buildP').style.width = '60%';
+
+    // STEP 3
+    updateStep(2, 'Actions', 'Trigger workflow...', 'active');
+    setActivity('Menghubungi server GitHub...');
+    addLog('Trigger workflow...', 'info');
+    await sleep(10000);
+    
+    let runId = null;
+    addLog('Mencari run ID...', 'info');
+    for (let i = 0; i < 20; i++) { 
+        const runs = await GitHub.getWorkflowRuns(ghUser, ghToken, ghRepo); 
+        if (runs.workflow_runs && runs.workflow_runs.length > 0) { 
+            runId = runs.workflow_runs[0].id; 
+            addLog('Run ID ditemukan: #' + runId, 'ok');
+            break; 
+        } 
+        updateStep(2, 'Actions', 'Polling... (' + (i+1) + '/20)', 'active');
+        await sleep(5000); 
+    }
+    
+    if (!runId) throw new Error('Workflow tidak mulai');
+    
+    updateStep(2, 'Actions', 'Build berjalan...', 'done');
+    document.getElementById('actionsLink').href = repoUrl + '/actions/runs/' + runId;
+
+    // STEP 4
+    updateStep(3, 'Monitoring', 'Menunggu hasil...', 'active');
+    setActivity('Server sedang mengkompilasi APK...');
+    addLog('Monitoring proses build...', 'info'); 
+    document.getElementById('runStatus').textContent = 'Running';
+    
+    let completed = false;
+    for (let i = 0; i < 180 && !completed; i++) {
+      await sleep(5000);
+      const run = await GitHub.getWorkflowRun(ghUser, ghToken, ghRepo, runId);
+      
+      let statusMsg = run.status || 'unknown';
+      if (run.status === 'queued') statusMsg = 'Menunggu runner...';
+      else if (run.status === 'in_progress') statusMsg = 'Sedang build...';
+      
+      updateStep(3, 'Monitoring', statusMsg + ' (cek ' + (i+1) + ')', 'active');
+      
+      if (run.status === 'completed') {
+        completed = true;
+        if (run.conclusion === 'success') {
+          updateStep(3, 'Monitoring', 'Sukses!', 'done');
+          document.getElementById('buildP').style.width = '100%';
+          document.getElementById('dlBtn').href = repoUrl + '/actions/runs/' + runId; document.getElementById('dlCard').classList.add('show');
+          addLog('BUILD BERHASIL!', 'ok'); 
+          toast('Selesai!', 'tok'); 
+          document.getElementById('runStatus').textContent = 'Success';
+          setActivity('Build selesai! APK siap diunduh.');
+        } else {
+            addLog('GAGAL: ' + run.conclusion, 'err');
+            // Try to fetch logs if possible (complex) or just link
+            throw new Error('Build gagal: ' + run.conclusion);
+        }
+      }
+    }
+    if (!completed) throw new Error('Timeout');
+
+  } catch (err) {
+    addLog('ERROR: ' + err.message, 'err'); 
+    toast('Error: ' + err.message, 'terr');
+    document.querySelectorAll('.step.active').forEach(s => { 
+        s.classList.add('error'); 
+        const sub = s.querySelector('.ssub'); if(sub) sub.textContent = 'Error';
+    });
+    document.getElementById('runStatus').textContent = 'Error';
+    setActivity('Terjadi kesalahan: ' + err.message);
+  } finally {
+    appState.building = false; 
+    stopTimer();
+    document.getElementById('buildBtn').classList.remove('loading'); 
+    document.getElementById('buildBtn').disabled = false;
+  }
+}
+
+function resetAll() { 
+    document.querySelectorAll('input').forEach(el => el.value = ''); 
+    clearSource(); 
+    resetUI('file'); resetUI('url'); resetUI('zip'); 
+    appState.iconDataUrl=null; 
+    document.getElementById('iconImg').style.display='none'; 
+    document.querySelector('.ithumb i').style.display=''; 
+    document.getElementById('iconZone').classList.remove('filled'); 
+    toast('Reset', 'twarn'); 
+}
+</script>
+</body>
+</html>
